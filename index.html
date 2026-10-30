@@ -182,7 +182,6 @@
 
     <script>
 
-        // Convert XML attribute values safely
         function escapeXmlAttribute(value) {
             return String(value)
                 .replace(/&/g, "&amp;")
@@ -192,22 +191,19 @@
         }
 
 
-        // GPX to iPogo conversion
         function convertGPX(input) {
 
             if (!input.trim()) {
                 throw new Error("Please enter GPX content.");
             }
 
-            // Parse the input XML
             const parser = new DOMParser();
 
             const xml = parser.parseFromString(
                 input,
                 "application/xml"
             );
-
-            // Check for XML parsing errors
+            
             if (
                 xml.getElementsByTagName("parsererror").length > 0 ||
                 xml.documentElement.localName === "parsererror"
@@ -215,7 +211,6 @@
                 throw new Error("The entered content is not valid XML.");
             }
 
-            // Find all track points, including namespaced elements
             const allElements = xml.getElementsByTagName("*");
 
             const lines = [
@@ -244,7 +239,6 @@
                 }
             }
 
-            // Check if any track points were found
             if (count === 0) {
                 throw new Error(
                     "No track points were found in this GPX content."
@@ -257,7 +251,6 @@
         }
 
 
-        // Handle form submission
         document.getElementById("converter_form")
             .addEventListener("submit", function(e) {
 
@@ -268,7 +261,6 @@
                 const outputSection = document.getElementById("output_section");
                 const output = document.getElementById("output_gpx");
 
-                // Reset previous results
                 error.style.display = "none";
                 error.textContent = "";
 
@@ -277,16 +269,13 @@
 
                 try {
 
-                    // Perform conversion
                     const result = convertGPX(input);
-
-                    // Display converted GPX
+                    
                     output.value = result;
                     outputSection.style.display = "block";
 
                 } catch (err) {
 
-                    // Display error
                     error.textContent = err.message;
                     error.style.display = "block";
 
@@ -294,8 +283,6 @@
 
             });
 
-
-        // Copy converted output
         async function copyOutput() {
 
             const output = document.getElementById("output_gpx");
@@ -313,7 +300,6 @@
 
             } catch (err) {
 
-                // Fallback for browsers without clipboard API access
                 output.select();
                 output.setSelectionRange(0, output.value.length);
 
