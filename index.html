@@ -91,6 +91,7 @@
         }
 
         .error {
+            display: none;
             margin-top: 20px;
             padding: 12px;
             border-radius: 8px;
@@ -102,10 +103,30 @@
             font-size: 13px;
             text-align: center;
         }
+
+        a {
+            color: skyblue;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+
+            .container {
+                margin: 12px auto;
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 23px;
+            }
+        }
     </style>
 </head>
 
 <body>
+
     <main class="container">
 
         <h1>gpx.studio to iPogo converter</h1>
@@ -114,11 +135,9 @@
             Paste your gpx.studio text here to convert it to a iPogo recognizable version
         </p>
 
-        {% if error %}
-            <div class="error">{{ error }}</div>
-        {% endif %}
+        <div class="error" id="error"></div>
 
-        <form method="POST">
+        <form id="converter_form">
 
             <label for="gpx_content">Input gpx.studio text</label>
 
@@ -127,7 +146,7 @@
                 name="gpx_content"
                 placeholder="Paste your gpx.studio text here..."
                 required
-            >{{ input_gpx }}</textarea>
+            ></textarea>
 
             <button type="submit">
                 Convert text
@@ -135,14 +154,14 @@
 
         </form>
 
-        {% if output_gpx %}
+        <div id="output_section" style="display: none;">
 
             <label for="output_gpx">iPogo version</label>
 
             <textarea
                 id="output_gpx"
                 readonly
-            >{{ output_gpx }}</textarea>
+            ></textarea>
 
             <button
                 type="button"
@@ -152,30 +171,167 @@
                 Copy output
             </button>
 
-        {% endif %}
+        </div>
 
         <p>
-            Create a gpx route on <a href="https://www.gpx.studio" style="color: skyblue;">gpx.studio</a>
+            Create a gpx route on
+            <a href="https://www.gpx.studio" target="_blank" rel="noopener noreferrer">gpx.studio</a>
         </p>
-        
+
     </main>
 
     <script>
-        function copyOutput() {
-            const output = document.getElementById("output_gpx");
 
-            output.select();
-            output.setSelectionRange(0, output.value.length);
-
-            navigator.clipboard.writeText(output.value)
-                .then(() => {
-                    const button = document.querySelector(".copy-button");
-                    button.textContent = "Copied!";
-                    setTimeout(() => {
-                        button.textContent = "Copy Output";
-                    }, 2000);
-                });
+        // Convert XML attribute values safely
+        function escapeXmlAttribute(value) {
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/"/g, "&quot;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
         }
+
+
+        // GPX to iPogo conversion
+        function convertGPX(input) {
+
+            if (!input.trim()) {
+                throw new Error("Please enter GPX content.");
+            }
+
+            // Parse the input XML
+            const parser = new DOMParser();
+
+            const xml = parser.parseFromString(
+                input,
+                "application/xml"
+            );
+
+            // Check for XML parsing errors
+            if (
+                xml.getElementsByTagName("parsererror").length > 0 ||
+                xml.documentElement.localName === "parsererror"
+            ) {
+                throw new Error("The entered content is not valid XML.");
+            }
+
+            // Find all track points, including namespaced elements
+            const allElements = xml.getElementsByTagName("*");
+
+            const lines = [
+                '<?xml version="1.0" encoding="utf-8" standalone="yes"?>',
+                '<gpx version="1.1" Visit="https://discord.gg/iPogo">'
+            ];
+
+            let count = 0;
+
+            for (const point of allElements) {
+
+                if (point.localName !== "trkpt") {
+                    continue;
+                }
+
+                const lat = point.getAttribute("lat");
+                const lon = point.getAttribute("lon");
+
+                if (lat !== null && lon !== null) {
+
+                    lines.push(
+                        `<wpt lat="${escapeXmlAttribute(lat)}" lon="${escapeXmlAttribute(lon)}"></wpt>`
+                    );
+
+                    count++;
+                }
+            }
+
+            // Check if any track points were found
+            if (count === 0) {
+                throw new Error(
+                    "No track points were found in this GPX content."
+                );
+            }
+
+            lines.push("</gpx>");
+
+            return lines.join("\n");
+        }
+
+
+        // Handle form submission
+        document.getElementById("converter_form")
+            .addEventListener("submit", function(e) {
+
+                e.preventDefault();
+
+                const input = document.getElementById("gpx_content").value;
+                const error = document.getElementById("error");
+                const outputSection = document.getElementById("output_section");
+                const output = document.getElementById("output_gpx");
+
+                // Reset previous results
+                error.style.display = "none";
+                error.textContent = "";
+
+                outputSection.style.display = "none";
+                output.value = "";
+
+                try {
+
+                    // Perform conversion
+                    const result = convertGPX(input);
+
+                    // Display converted GPX
+                    output.value = result;
+                    outputSection.style.display = "block";
+
+                } catch (err) {
+
+                    // Display error
+                    error.textContent = err.message;
+                    error.style.display = "block";
+
+                }
+
+            });
+
+
+        // Copy converted output
+        async function copyOutput() {
+
+            const output = document.getElementById("output_gpx");
+            const button = document.querySelector(".copy-button");
+
+            try {
+
+                await navigator.clipboard.writeText(output.value);
+
+                button.textContent = "Copied!";
+
+                setTimeout(() => {
+                    button.textContent = "Copy output";
+                }, 2000);
+
+            } catch (err) {
+
+                // Fallback for browsers without clipboard API access
+                output.select();
+                output.setSelectionRange(0, output.value.length);
+
+                const successful = document.execCommand("copy");
+
+                if (successful) {
+                    button.textContent = "Copied!";
+
+                    setTimeout(() => {
+                        button.textContent = "Copy output";
+                    }, 2000);
+                } else {
+                    button.textContent = "Copy failed";
+                }
+
+            }
+        }
+
     </script>
 
 </body>
