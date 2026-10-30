@@ -1,0 +1,182 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>gpx.studio to iPogo converter</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #101827;
+            color: #f8fafc;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 850px;
+            margin: 30px auto;
+            padding: 32px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 28px;
+        }
+
+        p {
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+
+        label {
+            display: block;
+            margin: 24px 0 10px;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 250px;
+            padding: 14px;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: 2px solid #38bdf8;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #38bdf8;
+            color: #082f49;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #7dd3fc;
+        }
+
+        .copy-button {
+            background: #334155;
+            color: #f8fafc;
+        }
+
+        .copy-button:hover {
+            background: #475569;
+        }
+
+        .error {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #7f1d1d;
+            color: #fee2e2;
+        }
+
+        .note {
+            font-size: 13px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+
+        <h1>gpx.studio to iPogo converter</h1>
+
+        <p>
+            Paste your gpx.studio text here to convert it to a iPogo recognizable version
+        </p>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST">
+
+            <label for="gpx_content">Input gpx.studio text</label>
+
+            <textarea
+                id="gpx_content"
+                name="gpx_content"
+                placeholder="Paste your gpx.studio text here..."
+                required
+            >{{ input_gpx }}</textarea>
+
+            <button type="submit">
+                Convert text
+            </button>
+
+        </form>
+
+        {% if output_gpx %}
+
+            <label for="output_gpx">iPogo version</label>
+
+            <textarea
+                id="output_gpx"
+                readonly
+            >{{ output_gpx }}</textarea>
+
+            <button
+                type="button"
+                class="copy-button"
+                onclick="copyOutput()"
+            >
+                Copy output
+            </button>
+
+        {% endif %}
+
+        <p>
+            Create a gpx route on <a href="https://www.gpx.studio" style="color: skyblue;">gpx.studio</a>
+        </p>
+        
+    </main>
+
+    <script>
+        function copyOutput() {
+            const output = document.getElementById("output_gpx");
+
+            output.select();
+            output.setSelectionRange(0, output.value.length);
+
+            navigator.clipboard.writeText(output.value)
+                .then(() => {
+                    const button = document.querySelector(".copy-button");
+                    button.textContent = "Copied!";
+                    setTimeout(() => {
+                        button.textContent = "Copy Output";
+                    }, 2000);
+                });
+        }
+    </script>
+
+</body>
+</html>
